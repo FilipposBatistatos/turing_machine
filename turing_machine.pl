@@ -40,7 +40,7 @@ consistent(Code, VA, VB, VC, VD) :-
     verifierD(VD, Code).
 
 variantA(gt). variantA(eq). variantA(lt).
-variantB(0). variantB(1). variantB(2). variant(3).
+variantB(0). variantB(1). variantB(2). variantB(3).
 variantC(lt). variantC(eq). variantC(gt).
 variantD(1). variantD(2). variantD(3).
 
@@ -78,28 +78,6 @@ hyp_answers_yes(Verifier, TestCode, Hyp) :-
 
 split_hyps(Verifier, TestCode, Hyps, YesHyps, NoHyps) :-
     partition(hyp_answers_yes(Verifier, TestCode), Hyps, YesHyps, NoHyps).
-
-best_query([Hyp], _Available, _TestCode, 0, none) :- !.
-
-best_query([Hyp], _Available, _TestCode, 0, solved(Hyp)) :- !.
-
-best_query(Hyps, Available, TestCode, Depth, query(V, PlanYes, PlanNo)) :-
-    findall(
-        D-V0-PY-PN,
-        ( member(V0, Available),
-          split_hyps(V0, TestCode, Hyps, Yes, No),
-          select(V0, Available, Remaining),
-          branch_depth(Yes, Remaining, TestCode, DYes, PY),
-          branch_depth(No, Remaining, TestCode, DNo, PN),
-          D is 1 + max(DYes, DNo)
-        ),
-        Candidates
-    ),
-    min_member(Depth-V-PlanYes-PlanNo, Candidates).
-
-branch_depth([], _, _, 0, vacuous) :- !.
-branch_depth(Hyps, Available, TestCode, D, Plan) :-
-    best_query(Hyps, Available, TestCode, D, Plan).
 
 worst_remaining([Hyp], _Available, _TestCode, _MaxDepth, 0, solved(Hyp)) :- !.
 
