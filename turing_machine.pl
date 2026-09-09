@@ -100,3 +100,38 @@ best_query(Hyps, Available, TestCode, Depth, query(V, PlanYes, PlanNo)) :-
 branch_depth([], _, _, 0, vacuous) :- !.
 branch_depth(Hyps, Available, TestCode, D, Plan) :-
     best_query(Hyps, Available, TestCode, D, Plan).
+
+worst_remaining([Hyp], _Available, _TestCode, _MaxDepth, 0, solved(Hyp)) :- !.
+
+worst_remaining(Hyps, _Available, _TestCode, 0, Worst, stuck(Hyps)) :- !,
+    length(Hyps, Worst).
+
+worst_remaining(Hyps, Available, TestCode, MaxDepth, Worst, query(V, PlanYes, PlanNo)) :-
+    MaxDepth > 0,
+    findall(
+        W-V0-PY-PN,
+        ( member(V0, Available),
+          split_hyps(V0, TestCode, Hyps, Yes, No),
+          select(V0, Available, Remaining),
+          Depth1 is MaxDepth - 1,
+          branch_worst(Yes, Remaining, TestCode, Depth1, WYes, PY),
+          branch_worst(No, Remaining, TestCode, Depth1, WNo, PN),
+          W is max(WYes, WNo)
+        ),
+        Candidates
+    ),
+    min_member(Worst-V-PlanYes-PlanNo, Candidates).
+
+branch_worst([], _, _, _, 0, vacuous) :- !.
+branch_worst(Hyps, Available, TestCode, MaxDepth, W, Plan) :-
+    worst_remaining(Hyps, Available, TestCode, MaxDepth, W, Plan).
+
+best_code_full(Hyps, Available, MaxDepth, BestCode, BestWorst, BestPlan) :-
+    findall(
+        Worst-Code-Plan,
+        ( code(Code),
+          worst_remaining(Hyps, Available, Code, MaxDepth, Worst, Plan)
+        ),
+        Triples
+    ),
+    min_member(BestWorst-BestCode-BestPlan, Triples).
