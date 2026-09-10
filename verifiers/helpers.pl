@@ -57,3 +57,8 @@ consecutive_descending_runs([_,Y|Rest], [1|Lengths]) :-
 longest_consecutive_descending_run(Code, Length) :-
     consecutive_descending_runs(Code, Lengths),
     max_list(Lengths, Length).
+
+longest_sequence_run(Code, Length) :-
+    longest_consecutive_ascending_run(Code, AscLen),
+    longest_consecutive_descending_run(Code,DesLen),
+    Length is Max(AscLen, DesLen).
