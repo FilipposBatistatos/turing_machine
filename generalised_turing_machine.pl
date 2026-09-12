@@ -1,3 +1,12 @@
+:- consult('./verifiers/helpers').
+:- consult('./verifiers/v_04').
+:- consult('./verifiers/v_09').
+:- consult('./verifiers/v_11').
+:- consult('./verifiers/v_14').
+
+load_cards(CardIds) :-
+    forall
+
 digit(D) :- member(D, [1,2,3,4,5]).
 
 code([D1, D2, D3]) :-
@@ -5,40 +14,36 @@ code([D1, D2, D3]) :-
     digit(D2),
     digit(D3).
 
-consistent(Code, VA, VB, VC, VD) :-
+/* Pick one variant for every card in the list */
+assign_variants([], []).
+assign_variants([CardId|Rest], [CardId-Variant|Assignment]) :- 
+    card_variants(CardId, Variants),
+    member(Variant, Variants),
+    assign_variants(Rest, Assignment).
+
+/* Check every card-variant pair actually holds for Code */ 
+consistent(Code, _CardIds, Assignment) :-
     code(Code),
-    verifierA(VA, Code),
-    verifierB(VB, Code),
-    verifierC(VC, Code),
-    verifierD(VD, Code).
+    check_all(Code, Assignment).
 
-hyps([
-    hyp(gt,1,eq,3,[5,5,3]),
-    hyp(eq,0,lt,3,[2,4,1]),
-    hyp(eq,0,gt,2,[5,4,5]),
-    hyp(eq,1,eq,3,[4,4,3]),
-    hyp(eq,1,gt,3,[5,4,3]),
-    hyp(lt,0,eq,3,[2,2,1]),
-    hyp(lt,1,lt,3,[2,3,1])
-]).
+check_all(_, []).
+check_all(Code, [CardId-Variant|Rest]) :- 
+    card_rule(CardId, Variant, Code),
+    check_all(Code, Rest).
 
-verifier_pred(a, verifierA).
-verifier_pred(b, verifierB).
-verifier_pred(c, verifierC).
-verifier_pred(d, verifierD).
+unique_solutions_gen(CardIds, Assignment, Code) :- 
+    assign_variants(CardIds, Assignment),
+    findall(C, consistent(C, CardIds, Assignment), [Code]).
 
-hyp_variant(a, hyp(VA,_,_,_,_), VA).
-hyp_variant(b, hyp(_,VB,_,_,_), VB).
-hyp_variant(c, hyp(_,_,VC,_,_), VC).
-hyp_variant(d, hyp(_,_,_,VD,_), VD).
+hyps_gen(CardIds, Hyps) :-
+    findall(hyp(Assignment, Code), unique_solutions_gen(CardIds, Assignment, Code), Hyps).
 
-hyp_answers_yes(Verifier, TestCode, Hyp) :-
-    hyp_variant(Verifier, Hyp, Variant),
-    verifier_pred(Verifier, Pred),
-    call(Pred, Variant, TestCode).
+hyp_answers_yes(CardId, TestCode, hyp(Assignment, _Code)) :- 
+    member(CardId-Variant, Assignment),
+    card_rule(CardId, Variant, TestCode).
 
-split_hyps(Verifier, TestCode, Hyps, YesHyps, NoHyps) :-
-    partition(hyp_answers_yes(Verifier, TestCode), Hyps, YesHyps, NoHyps).
+split_hyps(CardId, TestCode, Hyps, YesHyps, NoHyps) :-
+    partition(hyp_answers_yes(CardId, TestCode), Hyps, YesHyps, NoHyps).
 
 worst_remaining([Hyp], _Available, _TestCode, _MaxDepth, 0, solved(Hyp)) :- !.
 

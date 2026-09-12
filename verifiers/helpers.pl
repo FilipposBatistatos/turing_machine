@@ -15,7 +15,7 @@ count_duplicates(Code, N) :-
     length(Code, Len),
     sort(Code, Sorted),
     length(Sorted, SLen),
-    N is Len - DLen.
+    N is Len - SLen.
 
 ascending_pairs([_], _) :- !.
 ascending_pairs([A,B|Rest], all) :- 
@@ -31,7 +31,7 @@ is_ascending(Code) :- ascending_pairs(Code, all).
 is_descending(Code) :- descending_pairs(Code, all).
 
 order_type(Code, ascending) :- is_ascending(Code), !.
-order_type(Code, ascending) :- is_descending(Code), !.
+order_type(Code, descending) :- is_descending(Code), !.
 order_type(_, none).
 
 consecutive_ascending_runs([_], [1]) :- !.
@@ -60,5 +60,5 @@ longest_consecutive_descending_run(Code, Length) :-
 
 longest_sequence_run(Code, Length) :-
     longest_consecutive_ascending_run(Code, AscLen),
-    longest_consecutive_descending_run(Code,DesLen),
-    Length is Max(AscLen, DesLen).
+    longest_consecutive_descending_run(Code, DesLen),
+    Length is max(AscLen, DesLen).
