@@ -1,11 +1,18 @@
 :- consult('./verifiers/helpers').
-:- consult('./verifiers/v_04').
-:- consult('./verifiers/v_09').
-:- consult('./verifiers/v_11').
-:- consult('./verifiers/v_14').
+/*
+# :- consult('./verifiers/v_04').
+# :- consult('./verifiers/v_09').
+# :- consult('./verifiers/v_11').
+# :- consult('./verifiers/v_14').
+*/
 
 load_cards(CardIds) :-
-    forall
+    forall(
+        member(CardId, CardIds),
+        ( format(atom(Path), './verifiers/v_~|~`0t~d~2+', [CardId]), 
+            consult(Path)
+        )
+    ).
 
 digit(D) :- member(D, [1,2,3,4,5]).
 
