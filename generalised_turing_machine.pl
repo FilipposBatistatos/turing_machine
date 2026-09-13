@@ -1,10 +1,11 @@
 :- consult('./verifiers/helpers').
-/*
-# :- consult('./verifiers/v_04').
-# :- consult('./verifiers/v_09').
-# :- consult('./verifiers/v_11').
-# :- consult('./verifiers/v_14').
-*/
+
+digit(D) :- member(D, [1,2,3,4,5]).
+
+code([D1, D2, D3]) :-
+    digit(D1),
+    digit(D2),
+    digit(D3).
 
 load_cards(CardIds) :-
     forall(
@@ -13,13 +14,6 @@ load_cards(CardIds) :-
             consult(Path)
         )
     ).
-
-digit(D) :- member(D, [1,2,3,4,5]).
-
-code([D1, D2, D3]) :-
-    digit(D1),
-    digit(D2),
-    digit(D3).
 
 /* Pick one variant for every card in the list */
 assign_variants([], []).
@@ -86,3 +80,25 @@ best_code_full(Hyps, Available, MaxDepth, BestCode, BestWorst, BestPlan) :-
         Triples
     ),
     min_member(BestWorst-BestCode-BestPlan, Triples).
+
+print_plan(Plan) :- print_plan(Plan, 0).
+
+print_plan(solved(hyp(_, Code)), Depth) :-
+    !,
+    tab(Depth), format("=> CODE: ~w~n", [Code]).
+
+print_plan(stuck(Hyps), Depth) :-
+    !,
+    tab(Depth), format("STUCK, remaining hypotheses: ~w~n", [Hyps]).
+
+print_plan(vacuous, Depth) :-
+    !,
+    tab(Depth), format("(this outcome can't occur)~n", []).
+
+print_plan(query(Verifier, PlanYes, PlanNo), Depth) :-
+    tab(Depth), format("Test verifier ~w~n", [Verifier]),
+    Depth1 is Depth + 2,
+    tab(Depth1), format("YES ->~n", []),
+    print_plan(PlanYes, Depth1 + 2),
+    tab(Depth1), format("NO ->~n", []),
+    print_plan(PlanNo, Depth1 + 2).
