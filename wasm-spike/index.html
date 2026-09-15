@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head><title>SWI-Prolog WASM spike</title></head>
+<body>
+  <script src="./node_modules/swipl-wasm/dist/swipl/swipl-web.js"></script>
+  <script>
+    (async () => {
+      const swipl = await SWIPL({
+        arguments: ["-q"],
+        locateFile: (path) => `./node_modules/swipl-wasm/dist/swipl/${path}`,
+      });
+
+      // Every file 
+      const files = [
+        "generalised_turing_machine.pl",
+        "verifiers/helpers.pl",
+        "verifiers/v_04.pl",
+        "verifiers/v_09.pl",
+        "verifiers/v_11.pl",
+        "verifiers/v_14.pl",
+      ];
+
+      for (const path of files) {
+        const text = await fetch(path).then(r => r.text());
+        const dir = path.includes("/") ? path.split("/")[0] : null;
+        if (dir && !swipl.FS.analyzePath(dir).exists) {
+            swipl.FS.mkdir(dir);
+        }
+        swipl.FS.writeFile(path, text);
+      }
+
+      await swipl.prolog.query("consult('generalised_turing_machine')").once();
+
+      const result = swipl.prolog.query(
+        "hyps_gen([4,9,11,14], Hyps), length(Hyps, N)."
+      ).once();
+
+      console.log("Result:", result);
+    })();
+  </script>
+</body>
+</html>

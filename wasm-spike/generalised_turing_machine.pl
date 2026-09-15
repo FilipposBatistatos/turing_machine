@@ -1,4 +1,8 @@
 :- consult('./verifiers/helpers').
+:- consult('./verifiers/v_04').
+:- consult('./verifiers/v_09').
+:- consult('./verifiers/v_11').
+:- consult('./verifiers/v_14').
 
 digit(D) :- member(D, [1,2,3,4,5]).
 
