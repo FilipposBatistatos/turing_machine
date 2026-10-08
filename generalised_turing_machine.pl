@@ -34,7 +34,7 @@ contradicts(CardId, Variant, Obs) :-
     card_rule(CardId, Variant, Test).
 
 /* Check every card-variant pair actually holds for Code */ 
-consistent(Code, _CardIds, Assignment) :-
+consistent(Code, Assignment) :-
     code(Code),
     check_all(Code, Assignment).
 
@@ -43,44 +43,49 @@ check_all(Code, [CardId-Variant|Rest]) :-
     card_rule(CardId, Variant, Code),
     check_all(Code, Rest).
 
-unique_solutions_gen(CardIds, Assignment, Code) :- 
-    assign_variants(CardIds, Assignment),
-    findall(C, consistent(C, CardIds, Assignment), [Code]).
+unique_solutions_gen(CardIds, Obs, Assignment, Code) :- 
+    assign_variants(CardIds, Obs, Assignment),
+    findall(C, consistent(C, Assignment), [Code]).
 
-hyps_gen(CardIds, Hyps) :-
-    findall(hyp(Assignment, Code), unique_solutions_gen(CardIds, Assignment, Code), Hyps).
+/* Find all the unique solutions available based on the available verifiers */
+hyps_gen(CardIds, Obs, Hyps) :-
+    findall(hyp(Assignment, Code), 
+        unique_solutions_gen(CardIds, Obs, Assignment, Code), Hyps).
 
-hyp_answers_yes(CardId, TestCode, hyp(Assignment, _Code)) :- 
+hyp_answers_yes(CardId, TestCode, hyp(Assignment, _)) :- 
     member(CardId-Variant, Assignment),
     card_rule(CardId, Variant, TestCode).
 
 split_hyps(CardId, TestCode, Hyps, YesHyps, NoHyps) :-
     partition(hyp_answers_yes(CardId, TestCode), Hyps, YesHyps, NoHyps).
 
-worst_remaining([Hyp], _Available, _TestCode, _MaxDepth, 0, solved(Hyp)) :- !.
+/* Distinct secret codes left */
+ codes_of(Hyps, Codes) :-
+     findall(C, member(hyp(_, C), Hyps), Cs),
+     sort(Cs, Codes).
+
+worst_remaining([Hyp], _Available, _TestCode, _MaxDepth, 0, solved(Hyp)) :-
+    codes_of(Hyps, [Code]), !.
 
 worst_remaining(Hyps, _Available, _TestCode, 0, Worst, stuck(Hyps)) :- !,
-    length(Hyps, Worst).
+    codes_of(Hyps, Codes), length(Hyps, Worst).
 
-worst_remaining(Hyps, Available, TestCode, MaxDepth, Worst, query(V, PlanYes, PlanNo)) :-
-    MaxDepth > 0,
+worst_remaining(Hyps, Available, TestCode, MaxDepth, Worst, Plan) :-
+    Depth1 is MaxDepth - 1,
     findall(
         W-V0-PY-PN,
-        ( member(V0, Available),
+        ( select(V0, Available, Remaining),
           split_hyps(V0, TestCode, Hyps, Yes, No),
-          select(V0, Available, Remaining),
-          Depth1 is MaxDepth - 1,
-          branch_worst(Yes, Remaining, TestCode, Depth1, WYes, PY),
-          branch_worst(No, Remaining, TestCode, Depth1, WNo, PN),
+          Yes \== [], No \== [],            % a test that splits nothing is useless
+          worst_remaining(Yes, Remaining, TestCode, Depth1, WYes, PY),
+          worst_remaining(No,  Remaining, TestCode, Depth1, WNo,  PN),
           W is max(WYes, WNo)
         ),
-        Candidates
-    ),
-    min_member(Worst-V-PlanYes-PlanNo, Candidates).
-
-branch_worst([], _, _, _, 0, vacuous) :- !.
-branch_worst(Hyps, Available, TestCode, MaxDepth, W, Plan) :-
-    worst_remaining(Hyps, Available, TestCode, MaxDepth, W, Plan).
+        Candidates),
+    (   Candidates == []                    % no useful verifier left
+    ->  codes_of(Hyps, Codes), length(Codes, Worst), Plan = stuck(Codes)
+    ;   min_member(Worst-V-PY-PN, Candidates), Plan = query(V, PY, PN)
+    ).
 
 best_code_full(Hyps, Available, MaxDepth, BestCode, BestWorst, BestPlan) :-
     findall(
