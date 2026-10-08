@@ -20,7 +20,18 @@ assign_variants([], []).
 assign_variants([CardId|Rest], [CardId-Variant|Assignment]) :- 
     card_variants(CardId, Variants),
     member(Variant, Variants),
+    \+ contradicts(CardId, Variant, Obs),
     assign_variants(Rest, Assignment).
+
+/* Narrows down search using contadictions from previous information */
+contradicts(CardId, Variant, Obs) :-
+    member(round(Test, Results), obs),
+    member(CardId-yes, Results)
+    \+ card_rule(CardId, Variant, Test).
+contradicts(CardId, Variant, Obs) :-
+    member(round(Test, Results), obs),
+    member(CardId-no, Results)
+    card_rule(CardId, Variant, Test).
 
 /* Check every card-variant pair actually holds for Code */ 
 consistent(Code, _CardIds, Assignment) :-

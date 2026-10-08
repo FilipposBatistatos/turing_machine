@@ -30,9 +30,11 @@ descending_pairs([A,B|Rest], all) :-
 is_ascending(Code) :- ascending_pairs(Code, all).
 is_descending(Code) :- descending_pairs(Code, all).
 
-order_type(Code, ascending) :- is_ascending(Code), !.
-order_type(Code, descending) :- is_descending(Code), !.
-order_type(_, none).
+order_type(Code, Type) :-
+    ( is_ascending(Code)  -> Type = ascending
+    ; is_descending(Code) -> Type = descending
+    ; Type = none
+    ).
 
 consecutive_ascending_runs([_], [1]) :- !.
 consecutive_ascending_runs([X,Y|Rest], [Len|Lengths]) :- 
