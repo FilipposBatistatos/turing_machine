@@ -25,7 +25,7 @@ the working directory.
 
 ```prolog
 % Fresh puzzle, nothing observed yet
-?- produce_plan([4,9,11,14], []).
+?- produce_plan([4,9,11,14], []).   % The numbers of the verifier cards
 ```
 
 Output:
@@ -84,7 +84,7 @@ what you saw** and ask again:
 
 ```prolog
 ?- produce_plan([4,9,13,17], [
-       round([3,2,2], [4-pass, 13-pass, 17-fail])
+       round([3,2,2], [4-yes, 13-yes, 17-no])   % For test code 322, verifier 4 was a tick, 13 was a tick and 17 was a cross
    ]).
 ```
 
@@ -133,7 +133,7 @@ experiment:
 `Hyps` is a variable that disappears after the query finishes, so run the steps in
 one query as above.
 
-| Predicate | Does |
+| Predicate | Description |
 |---|---|
 | `load_cards(Ids)` | Consults `./verifiers/v_NN.pl` for each id |
 | `hyps_gen(Cards, Obs, Hyps)` | All variant assignments that leave exactly one code and fit the observations |
@@ -229,11 +229,3 @@ order_type(Code, Type) :-
    at the end of any branch. 0 means every branch ends solved. Ties go to the first
    found in Prolog's standard term order.
 
-## Limitations and notes
-
-- The proposed code isn't always a possible secret. It's whichever code gives the
-  best test tree, so the proposal might not be able to win outright.
-- `produce_plan` re-consults the card files on every call. That's fine at this size.
-- Tested on small 4-card sets. Search time grows with card and variant count, so
-  6-card puzzles may be slower.
-- There's no automated test suite yet.
